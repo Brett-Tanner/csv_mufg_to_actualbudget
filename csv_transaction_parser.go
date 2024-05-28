@@ -21,15 +21,21 @@ func getCSVs(path string) []fs.DirEntry {
 
 	var inputCSVs []fs.DirEntry
 	for _, file := range files {
-		filenameSegments := strings.Split(file.Name(), ".")
-		if filenameSegments[len(filenameSegments)-1] != "csv" {
-			continue
+		if isCSV(file.Name()) {
+			inputCSVs = append(inputCSVs, file)
 		}
-
-		inputCSVs = append(inputCSVs, file)
 	}
 
 	return inputCSVs
+}
+
+func isCSV(filename string) bool {
+	segments := strings.Split(filename, ".")
+	if segments[len(segments)-1] == "csv" {
+		return true
+	}
+
+	return false
 }
 
 // func ParseTransactions(inputFiles []fs.DirEntry) {
