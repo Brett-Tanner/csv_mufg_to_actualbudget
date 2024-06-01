@@ -2,10 +2,14 @@ package main
 
 import (
 	"encoding/csv"
+	"fmt"
 	"io/fs"
 	"log"
 	"os"
 	"strings"
+
+	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/transform"
 )
 
 func main() {
@@ -99,13 +103,23 @@ func createHeaders(writer *csv.Writer) [4]string {
 
 func transformRow(writer *csv.Writer, inputHeaders []string) [4]string {
 	date := inputHeaders[0]
-	payee := inputHeaders[2]
+	payee := asUTF8(inputHeaders[2])
 	outflow := inputHeaders[3]
 	inflow := inputHeaders[4]
 
 	outputRow := [4]string{date, payee, outflow, inflow}
 	writer.Write(outputRow[:])
 	return outputRow
+}
+
+func asUTF8(japaneseString string) string {
+	var result strings.Builder
+
+	winUTF8 := transform.NewWriter(&result, japanese.ShiftJIS.NewDecoder())
+	winUTF8.Write([]byte(japaneseString))
+	winUTF8.Close()
+	fmt.Println(result.String())
+	return result.String()
 }
 
 func handleErr(err error) {
