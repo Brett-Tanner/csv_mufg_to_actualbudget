@@ -1,5 +1,7 @@
 package main
 
+// Add arbitry filenames as cmd line arg
+
 import (
 	"encoding/csv"
 	"fmt"
@@ -103,7 +105,7 @@ func createHeaders(writer *csv.Writer) [4]string {
 
 func transformRow(writer *csv.Writer, inputHeaders []string) [4]string {
 	date := inputHeaders[0]
-	payee := asUTF8(inputHeaders[2])
+	payee := asUTF8(inputHeaders[1] + inputHeaders[2])
 	outflow := inputHeaders[3]
 	inflow := inputHeaders[4]
 
