@@ -1,23 +1,25 @@
 package main
 
 import (
-	"fmt"
+	"encoding/csv"
 	"io/fs"
+	"log"
 	"os"
 	"strings"
 )
 
 func main() {
-	inputCSVs := getCSVs("/Users/brett/Downloads/new_transactions")
-	fmt.Println(inputCSVs)
-	// ParseTransactions(inputCSVs)
+	path := "/Users/brett/Downloads/new_transactions"
+	inputCSVs := getCSVs(path)
+	err := processCSVs(inputCSVs, path)
+	handleErr(err)
+
+	os.Exit(0)
 }
 
 func getCSVs(path string) []fs.DirEntry {
 	files, err := os.ReadDir(path)
-	if err != nil {
-		fmt.Println(err)
-	}
+	handleErr(err)
 
 	var inputCSVs []fs.DirEntry
 	for _, file := range files {
@@ -38,38 +40,76 @@ func isCSV(filename string) bool {
 	return false
 }
 
-// func ParseTransactions(inputFiles []fs.DirEntry) {
-// 	for _, file := range inputFiles {
-//
-// 		inputFile, err := os.Open(file.Name())
-// 		defer inputFile.Close()
-// 		outputFile, err := os.Create(file.Name() + "output")
-// 		outputWriter := csv.NewWriter(outputFile)
-// 		defer outputFile.Close()
-// 		if err != nil {
-// 			fmt.Println(err)
-// 		}
-//
-// 		rows, err := csv.NewReader(inputFile).ReadAll()
-// 		for i, row := range rows {
-// 			if i == 0 {
-// 				translateHeaders(outputWriter, row)
-// 			}
-//
-// 			translateRow(outputWriter, row)
-// 		}
-// 	}
-// }
-//
-// func translateHeaders(w *csv.Writer, row []string) [4]string {
-// 	return [4]string{"", "", "", ""}
-// }
-//
-// func translateRow(w *csv.Writer, row []string) [4]string {
-// 	for i, cell := range row {
-// 		switch i {
-// 		case 0:
-// 		}
-// 	}
-// 	return [4]string{"", "", "", ""}
-// }
+func processCSVs(inputCSVs []fs.DirEntry, inputPath string) error {
+	outputPath := getOutputPath(inputPath)
+	dirErr := os.MkdirAll(outputPath, 0777)
+	handleErr(dirErr)
+
+	for _, inputCSV := range inputCSVs {
+		inputIO, inputIOErr := os.Open(filepathFor(inputCSV.Name(), inputPath))
+		defer inputIO.Close()
+		handleErr(inputIOErr)
+
+		outputIO, outputIOErr := os.Create(filepathFor(inputCSV.Name(), outputPath))
+		defer outputIO.Close()
+		handleErr(outputIOErr)
+
+		rows, err := csv.NewReader(inputIO).ReadAll()
+		handleErr(err)
+		writer := csv.NewWriter(outputIO)
+		createHeaders(writer)
+		for i, row := range rows {
+			if i == 0 {
+				continue
+			}
+
+			transformRow(writer, row)
+		}
+		writer.Flush()
+		handleErr(writer.Error())
+	}
+
+	return nil
+}
+
+func getOutputPath(inputPath string) string {
+	pathSegments := strings.Split(inputPath, "/")
+
+	parent := pathSegments[0 : len(pathSegments)-1]
+	parent = append(parent, "processed_transactions")
+
+	return strings.Join(parent, "/")
+}
+
+func filepathFor(filename, path string) string {
+	var filepath strings.Builder
+
+	filepath.WriteString(path)
+	filepath.WriteString("/")
+	filepath.WriteString(filename)
+
+	return filepath.String()
+}
+
+func createHeaders(writer *csv.Writer) [4]string {
+	headers := [4]string{"Date", "Payee", "Outflow", "Inflow"}
+	writer.Write(headers[:])
+	return headers
+}
+
+func transformRow(writer *csv.Writer, inputHeaders []string) [4]string {
+	date := inputHeaders[0]
+	payee := inputHeaders[2]
+	outflow := inputHeaders[3]
+	inflow := inputHeaders[4]
+
+	outputRow := [4]string{date, payee, outflow, inflow}
+	writer.Write(outputRow[:])
+	return outputRow
+}
+
+func handleErr(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
