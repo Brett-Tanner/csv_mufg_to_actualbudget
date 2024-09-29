@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	path := "/Users/brett/Downloads/new_transactions"
+	path := "/Users/brett/Downloads"
 	inputCSVs := getCSVs(path)
 	err := processCSVs(inputCSVs, path)
 	handleErr(err)
@@ -47,7 +47,7 @@ func isCSV(filename string) bool {
 }
 
 func processCSVs(inputCSVs []fs.DirEntry, inputPath string) error {
-	outputPath := getOutputPath(inputPath)
+	outputPath := inputPath + "/processed_transactions/"
 	dirErr := os.MkdirAll(outputPath, 0777)
 	handleErr(dirErr)
 
@@ -76,15 +76,6 @@ func processCSVs(inputCSVs []fs.DirEntry, inputPath string) error {
 	}
 
 	return nil
-}
-
-func getOutputPath(inputPath string) string {
-	pathSegments := strings.Split(inputPath, "/")
-
-	parent := pathSegments[0 : len(pathSegments)-1]
-	parent = append(parent, "processed_transactions")
-
-	return strings.Join(parent, "/")
 }
 
 func filepathFor(filename, path string) string {
