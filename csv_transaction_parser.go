@@ -1,9 +1,8 @@
 package main
 
-// Add arbitry filenames as cmd line arg
-
 import (
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"io/fs"
 	"log"
@@ -15,9 +14,12 @@ import (
 )
 
 func main() {
+	bankPtr := flag.String("bank", "mufg", "bank you're parsing transactions from")
+	flag.Parse()
+
 	path := "/Users/brett/Downloads"
 	inputCSVs := getCSVs(path)
-	err := processCSVs(inputCSVs, path)
+	err := processCSVs(inputCSVs, path, *bankPtr)
 	handleErr(err)
 
 	os.Exit(0)
@@ -46,7 +48,7 @@ func isCSV(filename string) bool {
 	return false
 }
 
-func processCSVs(inputCSVs []fs.DirEntry, inputPath string) error {
+func processCSVs(inputCSVs []fs.DirEntry, inputPath string, bank string) error {
 	outputPath := inputPath + "/processed_transactions/"
 	dirErr := os.MkdirAll(outputPath, 0777)
 	handleErr(dirErr)
@@ -69,7 +71,11 @@ func processCSVs(inputCSVs []fs.DirEntry, inputPath string) error {
 				continue
 			}
 
-			transformRow(writer, row)
+			if bank == "mufg" {
+				fmt.Println(transformMufgRow(writer, row))
+			} else {
+				fmt.Println(transformSonyRow(writer, row))
+			}
 		}
 		writer.Flush()
 		handleErr(writer.Error())
@@ -94,11 +100,22 @@ func createHeaders(writer *csv.Writer) [4]string {
 	return headers
 }
 
-func transformRow(writer *csv.Writer, inputHeaders []string) [4]string {
+func transformMufgRow(writer *csv.Writer, inputHeaders []string) [4]string {
 	date := inputHeaders[0]
 	payee := asUTF8(inputHeaders[1] + inputHeaders[2])
 	outflow := inputHeaders[3]
 	inflow := inputHeaders[4]
+
+	outputRow := [4]string{date, payee, outflow, inflow}
+	writer.Write(outputRow[:])
+	return outputRow
+}
+
+func transformSonyRow(writer *csv.Writer, inputHeaders []string) [4]string {
+	date := asUTF8(inputHeaders[0])
+	payee := asUTF8(inputHeaders[1])
+	outflow := inputHeaders[4]
+	inflow := inputHeaders[3]
 
 	outputRow := [4]string{date, payee, outflow, inflow}
 	writer.Write(outputRow[:])
@@ -111,7 +128,6 @@ func asUTF8(japaneseString string) string {
 	winUTF8 := transform.NewWriter(&result, japanese.ShiftJIS.NewDecoder())
 	winUTF8.Write([]byte(japaneseString))
 	winUTF8.Close()
-	fmt.Println(result.String())
 	return result.String()
 }
 
