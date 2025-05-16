@@ -114,8 +114,8 @@ func transformMufgRow(writer *csv.Writer, inputHeaders []string) [4]string {
 func transformSonyRow(writer *csv.Writer, inputHeaders []string) [4]string {
 	date := asUTF8(inputHeaders[0])
 	payee := asUTF8(inputHeaders[1])
-	outflow := inputHeaders[4]
-	inflow := inputHeaders[3]
+	outflow := inputHeaders[5]
+	inflow := inputHeaders[4]
 
 	outputRow := [4]string{date, payee, outflow, inflow}
 	writer.Write(outputRow[:])
